@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NomadGrid — Проблема</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@300;400;700;900&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050a0e;
+  --surface: #0a1520;
+  --border: #1a3048;
+  --accent: #00d4ff;
+  --accent2: #ff6b35;
+  --accent3: #39ff14;
+  --text: #e8f4f8;
+  --text-dim: #6a8fa8;
+  --solar: #ffd700;
+  --danger: #ff3355;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background:var(--bg); color:var(--text);
+  font-family:'IBM Plex Sans',sans-serif;
+  overflow-x:hidden; min-height:100vh;
+}
+ 
+/* grid bg */
+body::after {
+  content:''; position:fixed; inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none; z-index:0;
+}
+ 
+/* ── NAV ── */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  padding:16px 40px;
+  display:flex; align-items:center; justify-content:space-between;
+  background:rgba(5,10,14,0.9); backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(26,48,72,0.5);
+}
+.nav-logo { font-family:'Unbounded',sans-serif; font-weight:900; font-size:16px; }
+.nav-logo span { color:var(--accent); }
+.nav-logo small { font-family:'Space Mono',monospace; font-size:8px; color:var(--text-dim); letter-spacing:3px; display:block; margin-top:2px; }
+.nav-right { display:flex; gap:12px; align-items:center; }
+.nav-pill {
+  font-family:'Space Mono',monospace; font-size:9px; letter-spacing:2px;
+  color:var(--text-dim); border:1px solid var(--border);
+  padding:6px 14px; text-decoration:none; transition:all 0.2s;
+}
+.nav-pill:hover { color:var(--accent); border-color:var(--accent); }
+.nav-pill.danger { color:var(--danger); border-color:var(--danger); animation:pulse-danger 2s infinite; }
+@keyframes pulse-danger { 0%,100%{box-shadow:0 0 0 rgba(255,51,85,0);} 50%{box-shadow:0 0 12px rgba(255,51,85,0.3);} }
+ 
+/* ── SCENE 1 — FULLSCREEN OPENER ── */
+#scene-1 {
+  position:relative; z-index:1;
+  min-height:100vh;
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  text-align:center; padding:100px 40px 60px;
+  overflow:hidden;
+}
+.scene-glow {
+  position:absolute; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle, rgba(255,51,85,0.08) 0%, transparent 65%);
+  width:800px; height:800px; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  animation:breathe 4s ease-in-out infinite;
+}
+@keyframes breathe { 0%,100%{transform:translate(-50%,-50%) scale(1);} 50%{transform:translate(-50%,-50%) scale(1.15);} }
+ 
+.scene-eyebrow {
+  font-family:'Space Mono',monospace; font-size:10px; letter-spacing:4px;
+  color:var(--danger); margin-bottom:20px;
+  display:flex; align-items:center; gap:12px;
+  animation:fadeUp 0.8s ease 0.2s both;
+}
+.scene-eyebrow::before, .scene-eyebrow::after {
+  content:''; display:block; height:1px; width:40px;
+  background:linear-gradient(to right, transparent, var(--danger));
+}
+.scene-eyebrow::after { background:linear-gradient(to left, transparent, var(--danger)); }
+ 
+.scene-title {
+  font-family:'Unbounded',sans-serif;
+  font-size:clamp(32px,6.5vw,82px);
+  font-weight:900; line-height:1.0; letter-spacing:-2px;
+  animation:fadeUp 0.8s ease 0.4s both;
+}
+.scene-title .red { color:var(--danger); }
+.scene-title .dim { color:var(--text-dim); font-weight:300; }
+ 
+.scene-sub {
+  margin-top:24px; font-size:16px; color:var(--text-dim);
+  line-height:1.75; max-width:600px;
+  animation:fadeUp 0.8s ease 0.6s both;
+}
+.scene-sub strong { color:var(--text); }
+ 
+/* BIG STAT */
+.big-stat-row {
+  display:flex; gap:0; margin-top:52px; border:1px solid rgba(255,51,85,0.25);
+  background:rgba(255,51,85,0.04);
+  animation:fadeUp 0.8s ease 0.8s both;
+}
+.big-stat {
+  padding:28px 36px; border-right:1px solid rgba(255,51,85,0.2);
+  text-align:left;
+}
+.big-stat:last-child { border-right:none; }
+.bs-label { font-family:'Space Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-bottom:8px; }
+.bs-val { font-family:'Unbounded',sans-serif; font-size:clamp(28px,4vw,48px); font-weight:900; line-height:1; color:var(--danger); }
+.bs-note { font-family:'Space Mono',monospace; font-size:8px; color:rgba(255,51,85,0.6); margin-top:6px; }
+ 
+.scroll-hint {
+  position:absolute; bottom:32px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  font-family:'Space Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--text-dim);
+  animation:fadeUp 1s ease 1.2s both;
+}
+.scroll-arrow {
+  width:18px; height:18px; border-right:1px solid var(--text-dim); border-bottom:1px solid var(--text-dim);
+  transform:rotate(45deg); animation:bounce 1.8s ease infinite;
+}
+@keyframes bounce { 0%,100%{transform:rotate(45deg) translateY(0);} 50%{transform:rotate(45deg) translateY(6px);} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(28px);} to{opacity:1;transform:translateY(0);} }
+ 
+/* ── SCENE 2 — KYZYLBEIT REAL CASE ── */
+#scene-2 {
+  position:relative; z-index:1;
+  border-top:1px solid var(--border);
+  padding:100px 40px;
+  max-width:1300px; margin:0 auto;
+}
+.case-grid { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:start; margin-top:48px; }
+ 
+.case-card {
+  background:var(--surface); border:1px solid rgba(255,51,85,0.3);
+  padding:32px; position:relative; overflow:hidden;
+}
+.case-card::before { content:''; position:absolute; top:0; left:0; width:100%; height:3px; background:var(--danger); }
+.case-tag { font-family:'Space Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--danger); margin-bottom:14px; }
+.case-name { font-family:'Unbounded',sans-serif; font-size:20px; font-weight:900; margin-bottom:6px; }
+.case-loc { font-family:'Space Mono',monospace; font-size:9px; color:var(--text-dim); margin-bottom:20px; }
+.case-facts { display:flex; flex-direction:column; gap:10px; }
+.case-fact { display:flex; gap:12px; align-items:flex-start; padding:10px 12px; background:rgba(255,51,85,0.05); border-left:2px solid var(--danger); }
+.cf-icon { font-size:16px; flex-shrink:0; }
+.cf-text { font-size:12px; color:var(--text-dim); line-height:1.6; }
+.cf-text strong { color:var(--text); }
+.case-source { margin-top:14px; font-family:'Space Mono',monospace; font-size:8px; color:rgba(106,143,168,0.5); }
+ 
+/* winter timeline */
+.winter-timeline { display:flex; flex-direction:column; gap:0; }
+.wt-item {
+  display:grid; grid-template-columns:60px 1fr;
+  gap:16px; align-items:start; padding:14px 0;
+  border-bottom:1px solid rgba(26,48,72,0.5);
+}
+.wt-item:last-child { border-bottom:none; }
+.wt-time { font-family:'Space Mono',monospace; font-size:10px; color:var(--danger); font-weight:700; }
+.wt-desc { font-size:13px; color:var(--text-dim); line-height:1.6; }
+.wt-desc strong { color:var(--text); }
+ 
+/* ── SCENE 3 — THE MATH ── */
+#scene-3 {
+  position:relative; z-index:1;
+  border-top:1px solid var(--border);
+  background:linear-gradient(180deg, rgba(255,51,85,0.03) 0%, transparent 100%);
+}
+.scene-3-inner { max-width:1300px; margin:0 auto; padding:100px 40px; }
+ 
+.math-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:48px; }
+.math-card {
+  background:var(--surface); border:1px solid var(--border);
+  padding:28px 24px; position:relative; overflow:hidden;
+  transition:border-color 0.3s;
+}
+.math-card:hover { border-color:var(--danger); }
+.math-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:var(--danger); }
+.math-card.orange::before { background:var(--accent2); }
+.math-card.blue::before { background:var(--accent); }
+.mc-label { font-family:'Space Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-bottom:12px; }
+.mc-val { font-family:'Unbounded',sans-serif; font-size:clamp(22px,3vw,36px); font-weight:900; line-height:1; margin-bottom:8px; }
+.mc-desc { font-size:12px; color:var(--text-dim); line-height:1.7; }
+.mc-source { margin-top:12px; font-family:'Space Mono',monospace; font-size:8px; color:rgba(106,143,168,0.5); }
+ 
+/* bar comparison */
+.compare-bars { margin-top:48px; }
+.cb-title { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:3px; color:var(--accent); margin-bottom:20px; }
+.bar-row { display:grid; grid-template-columns:180px 1fr 80px; gap:12px; align-items:center; margin-bottom:14px; }
+.bar-label { font-family:'Space Mono',monospace; font-size:10px; color:var(--text-dim); }
+.bar-track { height:10px; background:var(--border); position:relative; overflow:hidden; }
+.bar-fill { height:100%; transition:width 1.2s cubic-bezier(0.34,1.56,0.64,1); width:0; }
+.bar-num { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; text-align:right; }
+ 
+/* ── SCENE 4 — MAP OF PAIN ── */
+#scene-4 {
+  position:relative; z-index:1;
+  border-top:1px solid var(--border);
+}
+.scene-4-inner { max-width:1300px; margin:0 auto; padding:100px 40px; }
+ 
+.pain-grid { display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:start; margin-top:48px; }
+ 
+.region-pain-list { display:flex; flex-direction:column; gap:10px; }
+.rp-item {
+  display:grid; grid-template-columns:1fr auto;
+  gap:12px; align-items:center;
+  background:var(--surface); border:1px solid var(--border);
+  padding:14px 16px; transition:border-color 0.2s;
+}
+.rp-item:hover { border-color:var(--danger); }
+.rp-name { font-family:'Space Mono',monospace; font-size:10px; color:var(--text); font-weight:700; }
+.rp-detail { font-family:'Space Mono',monospace; font-size:8px; color:var(--text-dim); margin-top:3px; }
+.rp-badge {
+  font-family:'Space Mono',monospace; font-size:9px; padding:4px 10px;
+  border:1px solid; white-space:nowrap;
+}
+.rp-badge.critical { color:var(--danger); border-color:var(--danger); background:rgba(255,51,85,0.08); }
+.rp-badge.warn { color:var(--solar); border-color:var(--solar); background:rgba(255,215,0,0.06); }
+.rp-badge.ok { color:var(--accent3); border-color:var(--accent3); background:rgba(57,255,20,0.06); }
+ 
+.undp-block {
+  background:rgba(0,212,255,0.03); border:1px solid rgba(0,212,255,0.2);
+  padding:28px; position:relative;
+}
+.undp-block::before { content:'UNDP 2024'; position:absolute; top:12px; right:16px; font-family:'Space Mono',monospace; font-size:8px; color:rgba(0,212,255,0.4); }
+.undp-title { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--accent); margin-bottom:16px; }
+.undp-stat { margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid rgba(26,48,72,0.5); }
+.undp-stat:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+.undp-pct { font-family:'Unbounded',sans-serif; font-size:32px; font-weight:900; line-height:1; }
+.undp-desc { font-size:12px; color:var(--text-dim); line-height:1.6; margin-top:5px; }
+ 
+/* ── CTA TRANSITION ── */
+#scene-cta {
+  position:relative; z-index:1;
+  border-top:1px solid rgba(0,212,255,0.15);
+  background:radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0,212,255,0.05) 0%, transparent 70%);
+  text-align:center;
+  padding:100px 40px 120px;
+}
+.cta-pre { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:3px; color:var(--text-dim); margin-bottom:20px; }
+.cta-title {
+  font-family:'Unbounded',sans-serif;
+  font-size:clamp(24px,4.5vw,58px);
+  font-weight:900; line-height:1.05; letter-spacing:-1px; margin-bottom:20px;
+}
+.cta-title .acc { color:var(--accent); }
+.cta-sub { font-size:14px; color:var(--text-dim); line-height:1.8; max-width:520px; margin:0 auto 40px; }
+ 
+.launch-btn {
+  display:inline-block; padding:20px 52px;
+  background:transparent; border:2px solid var(--accent);
+  color:var(--accent); font-family:'Unbounded',sans-serif;
+  font-size:13px; font-weight:700; letter-spacing:2px;
+  cursor:pointer; text-decoration:none;
+  position:relative; overflow:hidden; transition:color 0.3s;
+}
+.launch-btn::before {
+  content:''; position:absolute; inset:0;
+  background:var(--accent); transform:translateX(-101%);
+  transition:transform 0.3s; z-index:-1;
+}
+.launch-btn:hover { color:var(--bg); box-shadow:0 0 40px rgba(0,212,255,0.3); }
+.launch-btn:hover::before { transform:translateX(0); }
+ 
+/* ── OVERLAY TRANSITION ── */
+#launch-overlay {
+  position:fixed; inset:0; z-index:9999;
+  background:var(--bg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  pointer-events:none; opacity:0; transition:opacity 0.15s;
+}
+#launch-overlay.active { pointer-events:all; opacity:1; }
+.overlay-grid-bg {
+  position:absolute; inset:0; transform-origin:center;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+  background-size:40px 40px;
+  animation:gridZoom 1.2s ease forwards;
+}
+@keyframes gridZoom { from{transform:scale(1);opacity:0.3;} to{transform:scale(2.5);opacity:0;} }
+.ol-logo { font-family:'Unbounded',sans-serif; font-weight:900; font-size:clamp(32px,6vw,70px); letter-spacing:-2px; position:relative; z-index:1; animation:logoIn 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
+.ol-logo span { color:var(--accent); }
+@keyframes logoIn { from{opacity:0;transform:scale(0.85);filter:blur(8px);} to{opacity:1;transform:scale(1);filter:blur(0);} }
+.ol-tag { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:4px; color:var(--text-dim); margin-top:10px; position:relative; z-index:1; animation:fadeUp 0.5s ease 0.4s both; }
+.ol-bar-wrap { margin-top:36px; width:300px; position:relative; z-index:1; animation:fadeUp 0.5s ease 0.5s both; }
+.ol-bar-hdr { display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--text-dim); margin-bottom:8px; }
+.ol-track { height:2px; background:var(--border); }
+.ol-fill { height:100%; width:0; background:var(--accent); box-shadow:0 0 10px var(--accent); transition:width 0.04s linear; position:relative; }
+.ol-fill::after { content:''; position:absolute; right:-1px; top:-3px; width:2px; height:8px; background:var(--accent); box-shadow:0 0 6px var(--accent); }
+.ol-steps { margin-top:18px; font-family:'Space Mono',monospace; font-size:9px; color:var(--text-dim); line-height:2.2; width:300px; position:relative; z-index:1; animation:fadeUp 0.5s ease 0.6s both; }
+.ol-step { opacity:0; transition:opacity 0.3s; }
+.ol-step.show { opacity:1; }
+.ol-step .ok { color:var(--accent3); }
+.burst { position:absolute; border-radius:50%; animation:burstOut 1s ease forwards; pointer-events:none; }
+@keyframes burstOut { from{width:0;height:0;opacity:0.7;transform:translate(-50%,-50%) scale(0);} to{width:600px;height:600px;opacity:0;transform:translate(-50%,-50%) scale(1);} }
+#launch-overlay.flash { animation:flashOut 0.35s ease forwards; }
+@keyframes flashOut { 0%{background:var(--bg);} 50%{background:rgba(0,212,255,0.12);} 100%{background:var(--bg);opacity:0;} }
+ 
+/* ── SCROLL REVEAL ── */
+.reveal { opacity:0; transform:translateY(24px); transition:opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity:1; transform:translateY(0); }
+.rd1{transition-delay:0.1s;} .rd2{transition-delay:0.2s;} .rd3{transition-delay:0.3s;} .rd4{transition-delay:0.4s;}
+ 
+/* ── SECTION HEADER ── */
+.sec-eye { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:3px; color:var(--danger); margin-bottom:10px; display:flex; align-items:center; gap:10px; }
+.sec-eye::before { content:''; display:block; height:1px; width:24px; background:var(--danger); }
+.sec-h { font-family:'Unbounded',sans-serif; font-size:clamp(20px,3vw,38px); font-weight:900; line-height:1.1; letter-spacing:-0.5px; }
+ 
+footer {
+  border-top:1px solid var(--border); padding:20px 40px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:'Space Mono',monospace; font-size:9px; color:var(--text-dim);
+  position:relative; z-index:1; flex-wrap:wrap; gap:8px;
+}
+ 
+@media(max-width:900px){
+  nav { padding:14px 16px; }
+  #scene-1, #scene-2, .scene-3-inner, .scene-4-inner, #scene-cta { padding-left:20px; padding-right:20px; }
+  .big-stat-row { flex-direction:column; }
+  .big-stat { border-right:none; border-bottom:1px solid rgba(255,51,85,0.2); }
+  .case-grid, .math-grid, .pain-grid { grid-template-columns:1fr; gap:24px; }
+  .bar-row { grid-template-columns:120px 1fr 60px; }
+  footer { padding:16px; }
+}
+</style>
+</head>
+<body>
+ 
+<!-- OVERLAY -->
+<div id="launch-overlay">
+  <div class="overlay-grid-bg"></div>
+  <div class="ol-logo">NOMAD<span>GRID</span></div>
+  <div class="ol-tag">ЗАГРУЗКА СИМУЛЯТОРА...</div>
+  <div class="ol-bar-wrap">
+    <div class="ol-bar-hdr"><span id="ol-status">ИНИЦИАЛИЗАЦИЯ</span><span id="ol-pct">0%</span></div>
+    <div class="ol-track"><div class="ol-fill" id="ol-fill"></div></div>
+  </div>
+  <div class="ol-steps">
+    <div class="ol-step" id="os1"><span class="ok">✔</span> Загрузка данных регионов КР</div>
+    <div class="ol-step" id="os2"><span class="ok">✔</span> NASA GHI модуль готов</div>
+    <div class="ol-step" id="os3"><span class="ok">✔</span> Цены Минэнерго КР 2025</div>
+    <div class="ol-step" id="os4"><span class="ok">✔</span> AI-движок запущен</div>
+  </div>
+</div>
+ 
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">NOMAD<span>GRID</span><small>AI MICROGRID SIMULATOR v2.0</small></div>
+  <div class="nav-right">
+    <a href="index.html" class="nav-pill">← ГЛАВНАЯ</a>
+    <a href="nomadgrid_main.html" class="nav-pill danger" id="nav-launch">▶ СИМУЛЯТОР</a>
+  </div>
+</nav>
+ 
+<!-- ══════════════════════════════════════════════
+     SCENE 1 — OPENER
+     ══════════════════════════════════════════════ -->
+<section id="scene-1">
+  <div class="scene-glow"></div>
+ 
+  <div class="scene-eyebrow">// РЕАЛЬНАЯ ПРОБЛЕМА · КР 2025</div>
+ 
+  <h1 class="scene-title">
+    1.5 МИЛЛИОНА<br>
+    <span class="red">БЕЗ НАДЁЖНОГО</span><br>
+    <span class="dim">СВЕТА</span>
+  </h1>
+ 
+  <p class="scene-sub">
+    Кыргызстан формально электрифицирован на 100%.<br>
+    Но <strong>каждая четвёртая семья</strong> не имеет стабильного электроснабжения.<br>
+    Зимой в горных аилах — темнота, холод, опасность.
+  </p>
+ 
+  <div class="big-stat-row">
+    <div class="big-stat">
+      <div class="bs-label">БЕЗ НАДЁЖНОГО СВЕТА</div>
+      <div class="bs-val" id="cnt-1">0%</div>
+      <div class="bs-note">~1.5 млн человек · UNDP 2024</div>
+    </div>
+    <div class="big-stat">
+      <div class="bs-label">ЗИМОЙ СТРАДАЮТ</div>
+      <div class="bs-val" id="cnt-2">0%</div>
+      <div class="bs-note">домохозяйств · UNDP 2024</div>
+    </div>
+    <div class="big-stat">
+      <div class="bs-label">НИКОГДА БЕЗ ПЕРЕБОЕВ</div>
+      <div class="bs-val" id="cnt-3">0%</div>
+      <div class="bs-note">только эти везунчики · UNDP 2024</div>
+    </div>
+    <div class="big-stat">
+      <div class="bs-label">ДИЗЕЛЬ vs СЕТЬ</div>
+      <div class="bs-val" id="cnt-4">0×</div>
+      <div class="bs-note">дороже — ~20 сом/кВт·ч</div>
+    </div>
+  </div>
+ 
+  <div class="scroll-hint">ПРОКРУТИ ВНИЗ<div class="scroll-arrow"></div></div>
+</section>
+ 
+<!-- ══════════════════════════════════════════════
+     SCENE 2 — REAL CASE
+     ══════════════════════════════════════════════ -->
+<section id="scene-2">
+  <div class="sec-eye reveal">// РЕАЛЬНЫЙ КЕЙС</div>
+  <h2 class="sec-h reveal">Это не статистика.<br>Это конкретные люди.</h2>
+ 
+  <div class="case-grid">
+    <div class="case-card reveal rd1">
+      <div class="case-tag">● КЫРГЫЗСТАН · НАРЫНСКАЯ ОБЛАСТЬ</div>
+      <div class="case-name">КЫЗЫЛБЕИТ</div>
+      <div class="case-loc">📍 На границе с Таджикистаном · ~300 жителей</div>
+      <div class="case-facts">
+        <div class="case-fact">
+          <div class="cf-icon">🚫</div>
+          <div class="cf-text"><strong>Никогда не имели электричества.</strong> Это не авария — это постоянная реальность для 300 человек.</div>
+        </div>
+        <div class="case-fact">
+          <div class="cf-icon">🏥</div>
+          <div class="cf-text"><strong>Нет ни школы, ни больницы.</strong> За медпомощью — в соседний район. По горным дорогам.</div>
+        </div>
+        <div class="case-fact">
+          <div class="cf-icon">❄️</div>
+          <div class="cf-text">Зима в Нарыне: <strong>−22°C</strong>. Без электричества — без тепла, без связи, без безопасности.</div>
+        </div>
+        <div class="case-fact">
+          <div class="cf-icon">📚</div>
+          <div class="cf-text">Дети учатся вахтовым методом или через интернет — там где он есть.</div>
+        </div>
+      </div>
+      <div class="case-source">Источник: Настоящее Время, 2016 · репортаж из Нарынской области</div>
+    </div>
+ 
+    <div>
+      <div class="sec-eye reveal rd1" style="color:var(--solar)">// ЧТО ПРОИСХОДИТ ЗИМОЙ</div>
+      <h3 style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;margin-bottom:24px;color:var(--text)" class="reveal rd2">Ноябрь 2025 — Минэнерго КР вводит ограничения</h3>
+      <div class="winter-timeline reveal rd2">
+        <div class="wt-item">
+          <div class="wt-time">НОЯ 2025</div>
+          <div class="wt-desc">Минэнерго вводит ограничения через <strong>умные счётчики</strong>: мощность снижается с 5 до 3 кВт в пиковые часы.</div>
+        </div>
+        <div class="wt-item">
+          <div class="wt-time">ЗИМА</div>
+          <div class="wt-desc"><strong>83% домохозяйств</strong> сталкиваются с нехваткой энергии. Маловодье на ГЭС + перегрузка сетей.</div>
+        </div>
+        <div class="wt-item">
+          <div class="wt-time">ГОРЫ</div>
+          <div class="wt-desc">В изолированных районах надёжное электроснабжение получают <strong>меньше 60% жителей</strong>. Снегопады, аварии на линиях.</div>
+        </div>
+        <div class="wt-item">
+          <div class="wt-time">ИТОГ</div>
+          <div class="wt-desc">Женщины тратят часы на заготовку дров. Грязный воздух от костров. <strong>Замёрзшие трубы. Риск для жизни.</strong></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-family:'Space Mono',monospace;font-size:8px;color:rgba(106,143,168,0.5)">Источники: Минэнерго КР 2025 · UNDP 2024 · CA Water Info 2026</div>
+    </div>
+  </div>
+</section>
+ 
+<!-- ══════════════════════════════════════════════
+     SCENE 3 — THE MATH (почему дизель не решение)
+     ══════════════════════════════════════════════ -->
+<section id="scene-3">
+  <div class="scene-3-inner">
+    <div class="sec-eye reveal">// ПОЧЕМУ ДИЗЕЛЬ — НЕ РЕШЕНИЕ</div>
+    <h2 class="sec-h reveal">Цена «альтернативы»</h2>
+ 
+    <div class="math-grid">
+      <div class="math-card reveal rd1">
+        <div class="mc-label">ТАРИФ СЕТИ КР</div>
+        <div class="mc-val" style="color:var(--accent3)">1.64</div>
+        <div class="mc-desc">сом за кВт·ч — официальный тариф Минэнерго. Самый низкий в регионе. Но только там где сеть есть.</div>
+        <div class="mc-source">Минэнерго КР, май 2025</div>
+      </div>
+      <div class="math-card orange reveal rd2">
+        <div class="mc-label">ДИЗЕЛЬ В ГОРАХ</div>
+        <div class="mc-val" style="color:var(--accent2)">15–25</div>
+        <div class="mc-desc">сом за кВт·ч. Топливо ~78 сом/л (март 2026) + доставка в горы. Семья тратит <strong>2 000–3 000 сом/мес</strong> только на свет.</div>
+        <div class="mc-source">Расчёт на основе рыночных цен КР 2026</div>
+      </div>
+      <div class="math-card reveal rd3">
+        <div class="mc-label">РАЗНИЦА</div>
+        <div class="mc-val" style="color:var(--danger)">12×</div>
+        <div class="mc-desc">Дизель дороже сетевого тарифа в 12 раз. За 10 лет семья <strong>теряет 360 000+ сом</strong> — половину стоимости микросети.</div>
+        <div class="mc-source">Сравнительный расчёт NomadGrid</div>
+      </div>
+    </div>
+ 
+    <div class="compare-bars reveal" style="margin-top:48px">
+      <div class="cb-title">// СТОИМОСТЬ кВт·ч — СРАВНЕНИЕ</div>
+      <div class="bar-row">
+        <div class="bar-label">Сеть КР (тариф)</div>
+        <div class="bar-track"><div class="bar-fill" style="background:var(--accent3)" data-width="8"></div></div>
+        <div class="bar-num" style="color:var(--accent3)">1.64 сом</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Микросеть ☀️</div>
+        <div class="bar-track"><div class="bar-fill" style="background:var(--accent)" data-width="18"></div></div>
+        <div class="bar-num" style="color:var(--accent)">~3–5 сом</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Дизель (горы)</div>
+        <div class="bar-track"><div class="bar-fill" style="background:var(--danger)" data-width="100"></div></div>
+        <div class="bar-num" style="color:var(--danger)">15–25 сом</div>
+      </div>
+      <div style="margin-top:8px;font-family:'Space Mono',monospace;font-size:8px;color:rgba(106,143,168,0.5)">
+        * Стоимость микросети за 25 лет эксплуатации · расчёт NomadGrid на реальных ценах КР 2025
+      </div>
+    </div>
+  </div>
+</section>
+ 
+<!-- ══════════════════════════════════════════════
+     SCENE 4 — REGIONAL MAP OF PAIN
+     ══════════════════════════════════════════════ -->
+<section id="scene-4">
+  <div class="scene-4-inner">
+    <div class="sec-eye reveal">// КАРТА ПРОБЛЕМЫ</div>
+    <h2 class="sec-h reveal">Кто страдает больше всего</h2>
+ 
+    <div class="pain-grid" style="margin-top:48px">
+      <div class="region-pain-list">
+        <div class="rp-item reveal rd1">
+          <div>
+            <div class="rp-name">🏔️ НАРЫН</div>
+            <div class="rp-detail">−22°C зимой · 2 000–4 000м · сеть очень ограничена</div>
+          </div>
+          <div class="rp-badge critical">КРИТИЧНО</div>
+        </div>
+        <div class="rp-item reveal rd2">
+          <div>
+            <div class="rp-name">🌄 ТАЛАС</div>
+            <div class="rp-detail">−18°C зимой · 1 200–3 500м · сеть ограничена</div>
+          </div>
+          <div class="rp-badge critical">КРИТИЧНО</div>
+        </div>
+        <div class="rp-item reveal rd3">
+          <div>
+            <div class="rp-name">☀️ БАТКЕН</div>
+            <div class="rp-detail">Макс. солнце · очень ограниченная сеть · идеал для микросетей</div>
+          </div>
+          <div class="rp-badge critical">КРИТИЧНО</div>
+        </div>
+        <div class="rp-item reveal rd1">
+          <div>
+            <div class="rp-name">🌿 ЖАЛАЛ-АБАД</div>
+            <div class="rp-detail">−5°C зимой · средняя надёжность сети</div>
+          </div>
+          <div class="rp-badge warn">УМЕРЕННО</div>
+        </div>
+        <div class="rp-item reveal rd2">
+          <div>
+            <div class="rp-name">💧 ЫСЫК-КӨЛ</div>
+            <div class="rp-detail">−15°C зимой · 1 600–2 700м · средняя сеть</div>
+          </div>
+          <div class="rp-badge warn">УМЕРЕННО</div>
+        </div>
+        <div class="rp-item reveal rd3">
+          <div>
+            <div class="rp-name">🏙️ ЧУЙ + БИШКЕК</div>
+            <div class="rp-detail">Столичный регион · хорошая сеть</div>
+          </div>
+          <div class="rp-badge ok">СТАБИЛЬНО</div>
+        </div>
+      </div>
+ 
+      <div class="undp-block reveal rd2">
+        <div class="undp-title">// ДАННЫЕ UNDP · МИНЭНЕРГО КР · 2024–2025</div>
+        <div class="undp-stat">
+          <div class="undp-pct" style="color:var(--danger)">83%</div>
+          <div class="undp-desc">домохозяйств сталкиваются с нехваткой энергии или перебоями <strong>зимой</strong></div>
+        </div>
+        <div class="undp-stat">
+          <div class="undp-pct" style="color:var(--solar)">58%</div>
+          <div class="undp-desc">отключают электричество <strong>несколько раз в год</strong></div>
+        </div>
+        <div class="undp-stat">
+          <div class="undp-pct" style="color:var(--accent2)">30.9%</div>
+          <div class="undp-desc">испытывают отключения <strong>ежемесячно</strong></div>
+        </div>
+        <div class="undp-stat">
+          <div class="undp-pct" style="color:var(--accent)">3.7%</div>
+          <div class="undp-desc">никогда не испытывают отключений — <strong>только они в безопасности</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+ 
+<!-- ══════════════════════════════════════════════
+     CTA — РЕШЕНИЕ
+     ══════════════════════════════════════════════ -->
+<section id="scene-cta">
+  <div class="cta-pre reveal">// А ТЕПЕРЬ — РЕШЕНИЕ</div>
+  <h2 class="cta-title reveal">
+    Мы посчитали<br>
+    <span class="acc">как это исправить</span>
+  </h2>
+  <p class="cta-sub reveal">
+    Выбери любой регион, укажи количество домов —
+    и за 30 секунд получи полный расчёт автономной солнечной микросети
+    на реальных данных КР 2025.
+  </p>
+  <div class="reveal">
+    <a href="nomadgrid_main.html" class="launch-btn" id="cta-launch">
+      ▶ ЗАПУСТИТЬ СИМУЛЯТОР
+    </a>
+  </div>
+  <div style="margin-top:20px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text-dim)" class="reveal">
+    Данные: UNDP · Минэнерго КР · NASA POWER · БНС · World Bank · AKDN
+  </div>
+</section>
+ 
+<footer>
+  <span>NOMADGRID v2.0 — AI MICROGRID SIMULATOR</span>
+  <span>🇰🇬 СДЕЛАНО ДЛЯ КЫРГЫЗСТАНА · 2025</span>
+  <span>Источники: UNDP 2024 · Минэнерго КР · CA Water Info 2026</span>
+</footer>
+ 
+<script>
+// ── COUNTER ANIMATION ──
+function animCount(el, target, suffix, duration, decimals) {
+  const start = performance.now();
+  function tick(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const e = 1 - Math.pow(1 - p, 3);
+    const v = e * target;
+    el.textContent = (decimals ? v.toFixed(decimals) : Math.round(v)) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+ 
+// Counters are in hero — start on load
+window.addEventListener('load', () => {
+  setTimeout(() => animCount(document.getElementById('cnt-1'), 23.6, '%', 1800), 600);
+  setTimeout(() => animCount(document.getElementById('cnt-2'), 83,   '%', 1600), 800);
+  setTimeout(() => animCount(document.getElementById('cnt-3'), 3.7,  '%', 1400, 1), 1000);
+  setTimeout(() => animCount(document.getElementById('cnt-4'), 12,   '×', 1200), 1200);
+});
+ 
+// ── BAR ANIMATION ──
+const barObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.width + '%';
+      });
+      barObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.4 });
+document.querySelectorAll('.compare-bars').forEach(el => barObs.observe(el));
+ 
+// ── SCROLL REVEAL ──
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+ 
+// ── LAUNCH TRANSITION ──
+function doLaunch(e) {
+  e.preventDefault();
+  const overlay = document.getElementById('launch-overlay');
+  const fill    = document.getElementById('ol-fill');
+  const pctEl   = document.getElementById('ol-pct');
+  const statEl  = document.getElementById('ol-status');
+  const labels  = ['ИНИЦИАЛИЗАЦИЯ','ЗАГРУЗКА ДАННЫХ','КАЛИБРОВКА','ЗАПУСК...','ГОТОВО ✔'];
+ 
+  overlay.classList.add('active');
+ 
+  // Burst from click point
+  const r = (e.currentTarget || e.target).getBoundingClientRect();
+  ['#00d4ff','#39ff14','#ff6b35'].forEach((col, i) => {
+    setTimeout(() => {
+      const ring = document.createElement('div');
+      ring.className = 'burst';
+      ring.style.cssText = `left:${r.left+r.width/2}px;top:${r.top+r.height/2}px;border:1px solid ${col};animation-delay:${i*0.1}s`;
+      overlay.appendChild(ring);
+      setTimeout(() => ring.remove(), 1200);
+    }, i * 80);
+  });
+ 
+  // Progress
+  const t0 = performance.now();
+  const dur = 1500;
+  function frame(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const ep = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2,2)/2;
+    const pv = Math.round(ep * 100);
+    fill.style.width = pv + '%';
+    pctEl.textContent = pv + '%';
+    statEl.textContent = labels[Math.min(Math.floor(ep * labels.length), labels.length-1)];
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+ 
+  // Steps
+  ['os1','os2','os3','os4'].forEach((id, i) => {
+    setTimeout(() => document.getElementById(id).classList.add('show'), i * 320);
+  });
+ 
+  // Navigate
+  setTimeout(() => {
+    overlay.classList.add('flash');
+    setTimeout(() => { window.location.href = 'nomadgrid_main.html'; }, 350);
+  }, 1750);
+}
+ 
+document.querySelectorAll('#cta-launch, #nav-launch').forEach(el => {
+  el.addEventListener('click', doLaunch);
+});
+</script>
+</body>
+</html>

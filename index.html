@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NomadGrid — Умные микросети для Кыргызстана</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@300;400;700;900&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050a0e;
+  --surface: #0a1520;
+  --surface2: #0f1e2e;
+  --border: #1a3048;
+  --accent: #00d4ff;
+  --accent2: #ff6b35;
+  --accent3: #39ff14;
+  --text: #e8f4f8;
+  --text-dim: #6a8fa8;
+  --solar: #ffd700;
+  --battery: #00ff88;
+  --danger: #ff3355;
+  --glow: 0 0 20px rgba(0,212,255,0.3);
+  --glow2: 0 0 20px rgba(255,107,53,0.3);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  overflow-x: hidden;
+}
+
+
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none; z-index:0;
+}
+
+
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:200;
+  padding: 16px 40px;
+  display: flex; align-items:center; justify-content:space-between;
+  background: rgba(5,10,14,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(26,48,72,0.6);
+  animation: fadeDown 0.8s ease both;
+}
+@keyframes fadeDown { from{opacity:0;transform:translateY(-20px);} to{opacity:1;transform:translateY(0);} }
+
+.nav-logo { font-family:'Unbounded',sans-serif; font-weight:900; font-size:17px; }
+.nav-logo span { color:var(--accent); }
+.nav-logo small { font-family:'Space Mono',monospace; font-size:8px; color:var(--text-dim); letter-spacing:3px; display:block; margin-top:2px; }
+
+.nav-links { display:flex; align-items:center; gap:24px; }
+.nav-links a { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--text-dim); text-decoration:none; transition:color 0.2s; }
+.nav-links a:hover { color:var(--accent); }
+.nav-badge { font-family:'Space Mono',monospace; font-size:9px; color:var(--accent3); border:1px solid var(--accent3); padding:5px 12px; letter-spacing:2px; animation: pulse-border 2s infinite; }
+@keyframes pulse-border { 0%,100%{box-shadow:0 0 0px rgba(57,255,20,0);} 50%{box-shadow:0 0 12px rgba(57,255,20,0.4);} }
+
+
+.hero {
+  position: relative; z-index:1;
+  min-height: 100vh;
+  display: flex; flex-direction:column; justify-content:center; align-items:center;
+  padding: 100px 40px 60px;
+  overflow: hidden;
+  text-align: center;
+}
+
+
+.hero-glow-1 {
+  position:absolute; width:700px; height:700px; border-radius:50%;
+  background: radial-gradient(circle, rgba(0,212,255,0.07) 0%, transparent 70%);
+  top:-200px; left:-200px;
+  animation: driftA 12s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+.hero-glow-2 {
+  position:absolute; width:600px; height:600px; border-radius:50%;
+  background: radial-gradient(circle, rgba(255,107,53,0.06) 0%, transparent 70%);
+  bottom:-150px; right:-150px;
+  animation: driftB 15s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+.hero-glow-3 {
+  position:absolute; width:400px; height:400px; border-radius:50%;
+  background: radial-gradient(circle, rgba(57,255,20,0.04) 0%, transparent 70%);
+  top:40%; left:60%;
+  animation: driftC 18s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes driftA { from{transform:translate(0,0);} to{transform:translate(80px,60px);} }
+@keyframes driftB { from{transform:translate(0,0);} to{transform:translate(-60px,-80px);} }
+@keyframes driftC { from{transform:translate(0,0) scale(1);} to{transform:translate(-40px,40px) scale(1.2);} }
+
+
+.particles { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.particle {
+  position:absolute; border-radius:50%;
+  animation: floatUp linear infinite;
+  opacity:0;
+}
+@keyframes floatUp {
+  0%   { transform:translateY(100vh) scale(0); opacity:0; }
+  10%  { opacity:1; }
+  90%  { opacity:0.6; }
+  100% { transform:translateY(-20px) scale(1); opacity:0; }
+}
+
+.hero-eyebrow {
+  font-family:'Space Mono',monospace; font-size:10px; letter-spacing:4px;
+  color:var(--accent3); margin-bottom:24px;
+  animation: fadeUp 1s ease 0.3s both;
+  display:flex; align-items:center; gap:12px;
+}
+.hero-eyebrow::before, .hero-eyebrow::after {
+  content:''; display:block; height:1px; width:40px;
+  background: linear-gradient(to right, transparent, var(--accent3));
+}
+.hero-eyebrow::after { background: linear-gradient(to left, transparent, var(--accent3)); }
+
+.hero-title {
+  font-family:'Unbounded',sans-serif;
+  font-size: clamp(36px, 7vw, 90px);
+  font-weight:900; line-height:1.0; letter-spacing:-2px;
+  animation: fadeUp 1s ease 0.5s both;
+  max-width:1000px;
+}
+.hero-title .accent { color:var(--accent); }
+.hero-title .accent2 { color:var(--accent2); }
+
+.hero-sub {
+  margin-top:28px; max-width:560px;
+  font-size:15px; color:var(--text-dim); line-height:1.75;
+  animation: fadeUp 1s ease 0.7s both;
+}
+
+.hero-cta {
+  margin-top:48px;
+  display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+  animation: fadeUp 1s ease 0.9s both;
+}
+
+.btn-primary {
+  padding:16px 36px;
+  background:transparent; border:2px solid var(--accent);
+  color:var(--accent); font-family:'Unbounded',sans-serif;
+  font-size:11px; font-weight:700; letter-spacing:2px;
+  cursor:pointer; text-decoration:none;
+  position:relative; overflow:hidden; transition:color 0.3s;
+  display:inline-block;
+}
+.btn-primary::before {
+  content:''; position:absolute; inset:0;
+  background:var(--accent); transform:translateX(-101%);
+  transition:transform 0.3s; z-index:-1;
+}
+.btn-primary:hover { color:var(--bg); box-shadow:var(--glow); }
+.btn-primary:hover::before { transform:translateX(0); }
+
+.btn-secondary {
+  padding:16px 36px;
+  background:rgba(255,107,53,0.08); border:1px solid var(--accent2);
+  color:var(--accent2); font-family:'Space Mono',monospace;
+  font-size:10px; letter-spacing:2px;
+  cursor:pointer; text-decoration:none;
+  display:inline-block; transition:all 0.2s;
+}
+.btn-secondary:hover { background:rgba(255,107,53,0.18); box-shadow:var(--glow2); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
+
+.hero-stats {
+  margin-top:60px; width:100%; max-width:900px;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+  border:1px solid var(--border); background:rgba(10,21,32,0.7);
+  animation: fadeUp 1s ease 1.1s both;
+}
+.stat-item {
+  padding:20px 24px; border-right:1px solid var(--border);
+  text-align:left; position:relative; overflow:hidden;
+}
+.stat-item:last-child { border-right:none; }
+.stat-item::before {
+  content:''; position:absolute; top:0; left:0; height:2px; width:0;
+  background:var(--accent); transition:width 1s ease;
+}
+.stat-item.visible::before { width:100%; }
+.stat-label { font-family:'Space Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--text-dim); }
+.stat-value { font-family:'Unbounded',sans-serif; font-size:26px; font-weight:900; margin-top:6px; line-height:1; }
+.stat-note { font-family:'Space Mono',monospace; font-size:8px; color:var(--text-dim); margin-top:4px; }
+
+.scroll-hint {
+  position:absolute; bottom:32px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  font-family:'Space Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--text-dim);
+  animation: fadeUp 1s ease 1.5s both;
+}
+.scroll-arrow {
+  width:20px; height:20px; border-right:1px solid var(--text-dim); border-bottom:1px solid var(--text-dim);
+  transform:rotate(45deg); animation:bounce 1.8s ease infinite;
+}
+@keyframes bounce { 0%,100%{transform:rotate(45deg) translateY(0);} 50%{transform:rotate(45deg) translateY(6px);} }
+
+
+section { position:relative; z-index:1; }
+.section-inner { max-width:1300px; margin:0 auto; padding:100px 40px; }
+
+.section-eyebrow {
+  font-family:'Space Mono',monospace; font-size:9px; letter-spacing:3px;
+  color:var(--accent3); margin-bottom:12px;
+  display:flex; align-items:center; gap:10px;
+}
+.section-eyebrow::before { content:''; display:block; height:1px; width:28px; background:var(--accent3); }
+
+.section-title {
+  font-family:'Unbounded',sans-serif; font-weight:900;
+  font-size:clamp(22px,3.5vw,42px); line-height:1.1; letter-spacing:-1px;
+  margin-bottom:16px;
+}
+
+/* ============================================================
+   PROBLEM SECTION
+   ============================================================ */
+.problem-section { border-top:1px solid var(--border); }
+
+.problem-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center;
+  margin-top:50px;
+}
+
+.problem-desc { color:var(--text-dim); font-size:14px; line-height:1.8; max-width:520px; }
+.problem-desc strong { color:var(--text); }
+
+.problem-cards { display:flex; flex-direction:column; gap:12px; }
+.problem-card {
+  background:var(--surface); border:1px solid var(--border);
+  padding:20px; display:flex; gap:16px; align-items:flex-start;
+  position:relative; overflow:hidden;
+  transition: border-color 0.3s, transform 0.3s;
+}
+.problem-card:hover { border-color:var(--danger); transform:translateX(6px); }
+.problem-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:var(--danger); }
+.problem-icon { font-size:22px; flex-shrink:0; }
+.problem-text h4 { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1px; color:var(--danger); margin-bottom:5px; }
+.problem-text p { font-size:12px; color:var(--text-dim); line-height:1.6; }
+
+/* ============================================================
+   FEATURES SECTION
+   ============================================================ */
+.features-section { background:linear-gradient(180deg, var(--bg) 0%, rgba(10,21,32,0.5) 50%, var(--bg) 100%); }
+
+.features-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:50px;
+}
+.feature-card {
+  background:var(--surface); border:1px solid var(--border);
+  padding:28px 24px; position:relative; overflow:hidden;
+  transition:all 0.3s; cursor:default;
+}
+.feature-card:hover { border-color:var(--accent); transform:translateY(-4px); box-shadow:0 8px 40px rgba(0,212,255,0.08); }
+.feature-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:var(--accent); }
+.feature-card.solar::before { background:var(--solar); }
+.feature-card.battery::before { background:var(--battery); }
+.feature-card.montecarlo::before { background:#a78bfa; }
+.feature-card.thermal::before { background:var(--accent2); }
+.feature-card.pdf::before { background:var(--accent3); }
+
+.feature-num {
+  font-family:'Space Mono',monospace; font-size:9px; letter-spacing:2px;
+  color:var(--text-dim); margin-bottom:12px;
+}
+.feature-icon { font-size:28px; margin-bottom:14px; }
+.feature-title {
+  font-family:'Unbounded',sans-serif; font-size:13px; font-weight:700;
+  margin-bottom:10px; color:var(--text);
+}
+.feature-desc { font-size:12px; color:var(--text-dim); line-height:1.7; }
+
+/* ============================================================
+   HOW IT WORKS
+   ============================================================ */
+.how-section { border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+
+.steps { display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-top:50px; position:relative; }
+.steps::before {
+  content:''; position:absolute; top:36px; left:10%; right:10%; height:1px;
+  background:linear-gradient(to right, transparent, var(--border), var(--accent), var(--border), transparent);
+}
+.step { padding:0 20px; text-align:center; position:relative; }
+.step-num {
+  width:72px; height:72px; border-radius:50%;
+  background:var(--bg); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Unbounded',sans-serif; font-size:20px; font-weight:900;
+  color:var(--accent); margin:0 auto 24px;
+  position:relative; z-index:1;
+  transition:all 0.3s;
+}
+.step:hover .step-num { background:rgba(0,212,255,0.1); border-color:var(--accent); box-shadow:var(--glow); }
+.step-title { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--text); margin-bottom:10px; }
+.step-desc { font-size:12px; color:var(--text-dim); line-height:1.7; }
+
+/* ============================================================
+   DATA SOURCES
+   ============================================================ */
+.data-section {}
+
+.data-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:40px;
+}
+.data-card {
+  background:rgba(0,212,255,0.03); border:1px solid rgba(0,212,255,0.12);
+  padding:20px; transition:all 0.3s;
+}
+.data-card:hover { background:rgba(0,212,255,0.06); border-color:rgba(0,212,255,0.3); }
+.data-source { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--accent); margin-bottom:8px; }
+.data-what { font-family:'Space Mono',monospace; font-size:11px; color:var(--text); margin-bottom:4px; font-weight:700; }
+.data-detail { font-size:11px; color:var(--text-dim); line-height:1.6; }
+
+/* ============================================================
+   FINAL CTA
+   ============================================================ */
+.cta-section {
+  text-align:center;
+  background: radial-gradient(ellipse 80% 50% at 50% 50%, rgba(0,212,255,0.04) 0%, transparent 70%);
+  border-top:1px solid var(--border);
+}
+.cta-inner { max-width:700px; margin:0 auto; padding:120px 40px; }
+
+.cta-title { font-family:'Unbounded',sans-serif; font-size:clamp(26px,4vw,52px); font-weight:900; line-height:1.05; letter-spacing:-1px; margin-bottom:20px; }
+.cta-title .acc { color:var(--accent); }
+
+.cta-sub { font-size:14px; color:var(--text-dim); line-height:1.8; max-width:480px; margin:0 auto 40px; }
+
+.cta-note { margin-top:24px; font-family:'Space Mono',monospace; font-size:9px; color:var(--text-dim); line-height:1.8; }
+
+/* Terminal blinking cursor */
+.cursor { display:inline-block; width:2px; height:14px; background:var(--accent); margin-left:2px; animation:blink 1s step-end infinite; vertical-align:middle; }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer {
+  border-top:1px solid var(--border); padding:20px 40px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:'Space Mono',monospace; font-size:9px; color:var(--text-dim);
+  position:relative; z-index:1; flex-wrap:wrap; gap:8px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media(max-width:900px){
+  nav { padding:14px 16px; }
+  .nav-links { display:none; }
+  .hero { padding:90px 20px 60px; }
+  .hero-stats { grid-template-columns:repeat(2,1fr); }
+  .stat-item { border-bottom:1px solid var(--border); }
+  .problem-grid { grid-template-columns:1fr; gap:30px; }
+  .features-grid { grid-template-columns:1fr; }
+  .steps { grid-template-columns:1fr 1fr; gap:30px; }
+  .steps::before { display:none; }
+  .data-grid { grid-template-columns:1fr; }
+  .section-inner { padding:60px 20px; }
+  footer { padding:16px; }
+}
+
+/* ============================================================
+   SCROLL REVEAL
+   ============================================================ */
+.reveal {
+  opacity:0; transform:translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity:1; transform:translateY(0); }
+.reveal-delay-1 { transition-delay:0.1s; }
+.reveal-delay-2 { transition-delay:0.2s; }
+.reveal-delay-3 { transition-delay:0.3s; }
+.reveal-delay-4 { transition-delay:0.4s; }
+.reveal-delay-5 { transition-delay:0.5s; }
+
+/* ============================================================
+   LAUNCH TRANSITION OVERLAY
+   ============================================================ */
+#launch-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; flex-direction:column; align-items:center; justify-content:center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+#launch-overlay.active {
+  pointer-events: all;
+  opacity: 1;
+}
+
+/* Scan lines on overlay */
+#launch-overlay::before {
+  content:'';
+  position:absolute; inset:0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,212,255,0.015) 2px,
+    rgba(0,212,255,0.015) 4px
+  );
+  pointer-events:none;
+}
+
+.overlay-grid {
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+  background-size:40px 40px;
+  animation: gridZoom 1.2s ease forwards;
+  transform-origin: center;
+}
+@keyframes gridZoom {
+  from { transform: scale(1);   opacity:0.3; }
+  to   { transform: scale(2.5); opacity:0;   }
+}
+
+.overlay-logo {
+  font-family:'Unbounded',sans-serif; font-weight:900; font-size:clamp(32px,6vw,72px);
+  letter-spacing:-2px; position:relative; z-index:1;
+  animation: logoReveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+}
+.overlay-logo span { color:var(--accent); }
+@keyframes logoReveal {
+  from { opacity:0; transform:scale(0.85) translateY(20px); filter:blur(8px); }
+  to   { opacity:1; transform:scale(1) translateY(0);      filter:blur(0);   }
+}
+
+.overlay-tagline {
+  font-family:'Space Mono',monospace; font-size:10px; letter-spacing:4px;
+  color:var(--text-dim); margin-top:12px; position:relative; z-index:1;
+  animation: fadeUp 0.5s ease 0.4s both;
+}
+
+.overlay-bar-wrap {
+  margin-top:40px; width:320px; position:relative; z-index:1;
+  animation: fadeUp 0.5s ease 0.5s both;
+}
+.overlay-bar-label {
+  font-family:'Space Mono',monospace; font-size:9px; letter-spacing:2px;
+  color:var(--text-dim); margin-bottom:8px;
+  display:flex; justify-content:space-between;
+}
+.overlay-bar-track {
+  height:2px; background:var(--border); position:relative; overflow:visible;
+}
+.overlay-bar-fill {
+  height:100%; width:0%; background:var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  transition: width 0.05s linear;
+  position:relative;
+}
+.overlay-bar-fill::after {
+  content:''; position:absolute; right:-1px; top:-3px;
+  width:2px; height:8px; background:var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.overlay-steps {
+  margin-top:20px; font-family:'Space Mono',monospace; font-size:9px;
+  color:var(--text-dim); line-height:2; text-align:left; width:320px;
+  position:relative; z-index:1;
+  animation: fadeUp 0.5s ease 0.6s both;
+}
+.overlay-step-line { opacity:0; transition:opacity 0.3s; }
+.overlay-step-line.done { opacity:1; }
+.overlay-step-line .ok { color:var(--accent3); }
+.overlay-step-line .running { color:var(--accent); animation:blink 0.6s step-end infinite; }
+
+/* Burst rings on launch */
+.burst {
+  position:absolute; border-radius:50%; border:1px solid var(--accent);
+  animation: burstOut 1s ease forwards;
+  pointer-events:none;
+}
+@keyframes burstOut {
+  from { width:0; height:0; opacity:0.8; transform:translate(-50%,-50%) scale(0); }
+  to   { width:600px; height:600px; opacity:0; transform:translate(-50%,-50%) scale(1); }
+}
+
+/* Final flash before navigate */
+#launch-overlay.flash {
+  animation: flashWhite 0.35s ease forwards;
+}
+@keyframes flashWhite {
+  0%   { background: var(--bg); }
+  50%  { background: rgba(0,212,255,0.15); }
+  100% { background: var(--bg); opacity:0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     NAVBAR
+     ============================================================ -->
+<nav>
+  <div class="nav-logo">
+    NOMAD<span>GRID</span>
+    <small>AI MICROGRID SIMULATOR v2.0</small>
+  </div>
+  <div class="nav-links">
+    <a href="#problem">ПРОБЛЕМА</a>
+    <a href="#features">ФУНКЦИИ</a>
+    <a href="#how">КАК РАБОТАЕТ</a>
+    <a href="#data">ДАННЫЕ</a>
+  </div>
+  <div class="nav-badge">🇰🇬 КР 2025</div>
+</nav>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero" id="hero">
+
+  <div class="hero-glow-1"></div>
+  <div class="hero-glow-2"></div>
+  <div class="hero-glow-3"></div>
+
+  <!-- Floating particles -->
+  <div class="particles" id="particles"></div>
+
+  <div class="hero-eyebrow">AI MICROGRID SIMULATOR</div>
+
+  <h1 class="hero-title">
+    ЭНЕРГИЯ<br>
+    <span class="accent">ДЛЯ КАЖДОГО</span><br>
+    <span class="accent2">АИЛА</span>
+  </h1>
+
+  <p class="hero-sub">
+    Первый AI-симулятор автономных микроэнергосетей на <strong style="color:var(--text)">реальных данных Кыргызстана 2025 года</strong>.
+    Рассчитай стоимость, панели, батареи и окупаемость за секунды.
+  </p>
+
+  <div class="hero-cta">
+    <a href="nomadgrid_main.html" class="btn-primary">▶ ЗАПУСТИТЬ СИМУЛЯТОР</a>
+    <a href="nomadgrid_problem.html" class="btn-secondary">// УЗНАТЬ О ПРОБЛЕМЕ</a>
+  </div>
+
+  <div class="hero-stats" id="hero-stats">
+    <div class="stat-item">
+      <div class="stat-label">РЕГИОНОВ КР</div>
+      <div class="stat-value" style="color:var(--accent)" id="count-regions">0</div>
+      <div class="stat-note">от Баткена до Нарына</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">ТАРИФ КГ (МАЙ 2025)</div>
+      <div class="stat-value" style="color:var(--solar)">1.64</div>
+      <div class="stat-note">сом / кВт·ч</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">МОНТЕ-КАРЛО</div>
+      <div class="stat-value" style="color:#a78bfa" id="count-mc">0</div>
+      <div class="stat-note">симуляций за раз</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">ИСТОЧНИКОВ ДАННЫХ</div>
+      <div class="stat-value" style="color:var(--accent3)" id="count-sources">0</div>
+      <div class="stat-note">NASA · Минэнерго · БНС · AKDN</div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    ПРОКРУТИТЬ ВНИЗ
+    <div class="scroll-arrow"></div>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PROBLEM SECTION
+     ============================================================ -->
+<section class="problem-section" id="problem">
+  <div class="section-inner">
+    <div class="section-eyebrow">// ПРОБЛЕМА</div>
+    <h2 class="section-title reveal">Миллионы людей в горных<br>районах КР без надёжного света</h2>
+
+    <div class="problem-grid">
+      <div>
+        <p class="problem-desc reveal reveal-delay-1">
+          Кыргызстан богат солнечной энергией — особенно на юге и в горных районах.
+          Но <strong>более 500 000 человек</strong> в сельской местности сталкиваются
+          с постоянными отключениями, недостаточной мощностью сети
+          или полным отсутствием электроснабжения.
+          <br><br>
+          Традиционные решения — тянуть линии электропередачи в труднодоступные аилы —
+          стоят десятки миллионов сомов. Дизель-генераторы обходятся в
+          <strong>~20 сом за кВт·ч</strong> — в 12 раз дороже тарифа сети.
+          <br><br>
+          <strong>Автономная микроэнергосеть</strong> меняет всё: окупаемость
+          против дизеля — 5–10 лет, срок службы — 25 лет, выброс CO₂ — почти нулевой.
+          Но никто не считал это для Кыргызстана точно. До сих пор.
+        </p>
+      </div>
+      <div class="problem-cards">
+        <div class="problem-card reveal reveal-delay-1">
+          <div class="problem-icon">⚡</div>
+          <div class="problem-text">
+            <h4>НЕНАДЁЖНАЯ СЕТЬ</h4>
+            <p>Зимой в Нарыне надёжность нацсети падает до 45%. Больницы, школы, дома — без света в мороз −22°C.</p>
+          </div>
+        </div>
+        <div class="problem-card reveal reveal-delay-2">
+          <div class="problem-icon">🛢️</div>
+          <div class="problem-text">
+            <h4>ДИЗЕЛЬ — ДОРОГО И ГРЯЗНО</h4>
+            <p>Доставка топлива в горные районы удваивает цену. 0.70 кг CO₂ на каждый кВт·ч. Зависимость от поставок.</p>
+          </div>
+        </div>
+        <div class="problem-card reveal reveal-delay-3">
+          <div class="problem-icon">📊</div>
+          <div class="problem-text">
+            <h4>НЕТ ИНСТРУМЕНТА РАСЧЁТА</h4>
+            <p>Акимы и инвесторы не могут быстро оценить стоимость и окупаемость микросети для конкретного аила.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FEATURES SECTION
+     ============================================================ -->
+<section class="features-section" id="features">
+  <div class="section-inner">
+    <div class="section-eyebrow">// ВОЗМОЖНОСТИ</div>
+    <h2 class="section-title reveal">Всё что нужно для<br>принятия решения</h2>
+
+    <div class="features-grid">
+      <div class="feature-card solar reveal reveal-delay-1">
+        <div class="feature-num">01</div>
+        <div class="feature-icon">☀️</div>
+        <div class="feature-title">РЕАЛЬНЫЕ ДАННЫЕ GHI</div>
+        <div class="feature-desc">Помесячные данные солнечного излучения (NASA POWER) по всем 7 регионам. Не усреднённые — реальные кВт·ч/м²/день.</div>
+      </div>
+      <div class="feature-card battery reveal reveal-delay-2">
+        <div class="feature-icon">🔋</div>
+        <div class="feature-num">02</div>
+        <div class="feature-title">РАСЧЁТ БАТАРЕЙ И ПАНЕЛЕЙ</div>
+        <div class="feature-desc">Автоматический расчёт числа панелей 400Вт и ёмкости LiFePO4-батарей с учётом зимнего пика и 2 дней автономии.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon">💰</div>
+        <div class="feature-num">03</div>
+        <div class="feature-title">ЦЕНЫ КР 2025</div>
+        <div class="feature-desc">Панели: 16–27 тыс. сом (volta.kg). Батареи: 22 500 сом/кВт·ч (220.kg). Тариф: 1.64 сом/кВт·ч (Минэнерго). Реальные цифры, не фантазии.</div>
+      </div>
+      <div class="feature-card montecarlo reveal reveal-delay-1">
+        <div class="feature-icon">🎲</div>
+        <div class="feature-num">04</div>
+        <div class="feature-title">МОНТЕ-КАРЛО (1000 СИМУЛЯЦИЙ)</div>
+        <div class="feature-desc">Оценка диапазона окупаемости с учётом неопределённости: GHI ±15%, цены панелей ±20%, потребление ±10%, дизель ±25%.</div>
+      </div>
+      <div class="feature-card thermal reveal reveal-delay-2">
+        <div class="feature-icon">🌡️</div>
+        <div class="feature-num">05</div>
+        <div class="feature-title">ТЕПЛОВЫЕ ПОТЕРИ ПАНЕЛЕЙ</div>
+        <div class="feature-desc">Расчёт температурного коэффициента (γ = −0.35%/°C). При −22°C в Нарыне панели дают на 16.5% больше мощности.</div>
+      </div>
+      <div class="feature-card pdf reveal reveal-delay-3">
+        <div class="feature-icon">📄</div>
+        <div class="feature-num">06</div>
+        <div class="feature-title">ЭКСПОРТ PDF-ОТЧЁТА</div>
+        <div class="feature-desc">Полный технический отчёт на нескольких страницах формата A4 с графиками, таблицами и AI-рекомендацией — одной кнопкой.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     HOW IT WORKS
+     ============================================================ -->
+<section class="how-section" id="how">
+  <div class="section-inner">
+    <div class="section-eyebrow">// КАК РАБОТАЕТ</div>
+    <h2 class="section-title reveal">Результат за 4 шага</h2>
+
+    <div class="steps">
+      <div class="step reveal reveal-delay-1">
+        <div class="step-num">01</div>
+        <div class="step-title">ВЫБЕРИ РЕГИОН</div>
+        <div class="step-desc">Нажми на интерактивную карту КР или выбери из списка: Нарын, Баткен, Ош, Талас и другие.</div>
+      </div>
+      <div class="step reveal reveal-delay-2">
+        <div class="step-num">02</div>
+        <div class="step-title">ЗАДАЙ ПАРАМЕТРЫ</div>
+        <div class="step-desc">Количество домов (5–500), месячное потребление, тип панелей. Все значения по умолчанию — реальные данные БНС КР.</div>
+      </div>
+      <div class="step reveal reveal-delay-3">
+        <div class="step-num">03</div>
+        <div class="step-title">ЗАПУСТИ РАСЧЁТ</div>
+        <div class="step-desc">Симулятор рассчитает панели, батареи, стоимость, окупаемость, CO₂ и 8 вкладок с детальной аналитикой.</div>
+      </div>
+      <div class="step reveal reveal-delay-4">
+        <div class="step-num">04</div>
+        <div class="step-title">ЭКСПОРТИРУЙ ОТЧЁТ</div>
+        <div class="step-desc">Скачай PDF-отчёт с графиками и рекомендациями для предоставления акиму, инвестору или в банк.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     DATA SOURCES
+     ============================================================ -->
+<section class="data-section" id="data">
+  <div class="section-inner">
+    <div class="section-eyebrow">// ИСТОЧНИКИ ДАННЫХ</div>
+    <h2 class="section-title reveal">Модель на<br>верифицированных данных</h2>
+
+    <div class="data-grid">
+      <div class="data-card reveal reveal-delay-1">
+        <div class="data-source">МИНЭНЕРГО КР · МАЙ 2025</div>
+        <div class="data-what">Тарифы электросети</div>
+        <div class="data-detail">1.64 сом/кВт·ч до 700 кВт·ч · 2.94 сом/кВт·ч свыше. Официальный действующий тариф.</div>
+      </div>
+      <div class="data-card reveal reveal-delay-2">
+        <div class="data-source">NASA POWER · IRENA</div>
+        <div class="data-what">Солнечное излучение (GHI)</div>
+        <div class="data-detail">Помесячные данные кВт·ч/м²/день для каждого из 7 регионов. Многолетние средние.</div>
+      </div>
+      <div class="data-card reveal reveal-delay-3">
+        <div class="data-source">БНС КР · 2024</div>
+        <div class="data-what">Потребление электроэнергии</div>
+        <div class="data-detail">232 кВт·ч/мес — среднее потребление сельского домохозяйства. Данные Бюро нацстатистики.</div>
+      </div>
+      <div class="data-card reveal reveal-delay-1">
+        <div class="data-source">volta.kg · bobbystore.kg</div>
+        <div class="data-what">Цены на солнечные панели</div>
+        <div class="data-detail">16 000–27 000 сом за панель 400Вт. Реальные цены кыргызстанских поставщиков 2025.</div>
+      </div>
+      <div class="data-card reveal reveal-delay-2">
+        <div class="data-source">220.kg</div>
+        <div class="data-what">Стоимость батарей LiFePO4</div>
+        <div class="data-detail">~22 500 сом/кВт·ч (~108 000 сом за 4.8 кВт·ч). Розничные цены Бишкека.</div>
+      </div>
+      <div class="data-card reveal reveal-delay-3">
+        <div class="data-source">World Bank · AKDN</div>
+        <div class="data-what">Верификация — реальные проекты</div>
+        <div class="data-detail">Pamir Energy (Таджикистан), 30 000+ домов. Rural Electrification — 61+ деревня. Наши цифры совпадают.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FINAL CTA
+     ============================================================ -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <h2 class="cta-title reveal">
+      Готов рассчитать<br>
+      <span class="acc">свою микросеть?</span>
+    </h2>
+    <p class="cta-sub reveal reveal-delay-1">
+      Открой симулятор, выбери регион и получи полный технический расчёт за 30 секунд.
+      Бесплатно. Без регистрации. На реальных данных КР.
+    </p>
+    <div class="reveal reveal-delay-2">
+      <a href="nomadgrid_main.html" class="btn-primary" style="font-size:13px;padding:18px 48px;">
+        ▶ ОТКРЫТЬ NOMADGRID
+      </a>
+    </div>
+    <div class="cta-note reveal reveal-delay-3">
+      <span style="color:var(--accent3)">●</span> NOMADGRID v2.0 — ДАННЫЕ КР 2025<span class="cursor"></span><br>
+      МИНЭНЕРГО КР · БНС · volta.kg · NASA POWER · World Bank · AKDN
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer>
+  <span>NOMADGRID v2.0 — AI MICROGRID SIMULATOR</span>
+  <span>🇰🇬 СДЕЛАНО ДЛЯ КЫРГЫЗСТАНА · 2025</span>
+  <span>ИСТОЧНИКИ: МИНЭНЕРГО КР · БНС · NASA POWER · World Bank</span>
+</footer>
+
+<!-- ============================================================
+     LAUNCH TRANSITION OVERLAY
+     ============================================================ -->
+<div id="launch-overlay">
+  <div class="overlay-grid"></div>
+  <div class="overlay-logo">NOMAD<span>GRID</span></div>
+  <div class="overlay-tagline">AI MICROGRID SIMULATOR v2.0</div>
+  <div class="overlay-bar-wrap">
+    <div class="overlay-bar-label">
+      <span id="ol-status">ИНИЦИАЛИЗАЦИЯ...</span>
+      <span id="ol-pct">0%</span>
+    </div>
+    <div class="overlay-bar-track">
+      <div class="overlay-bar-fill" id="ol-bar"></div>
+    </div>
+  </div>
+  <div class="overlay-steps" id="ol-steps">
+    <div class="overlay-step-line" id="ol-s1"><span class="running">▶</span> Загрузка данных регионов КР...</div>
+    <div class="overlay-step-line" id="ol-s2"><span class="ok">✔</span> Инициализация NASA GHI модуля</div>
+    <div class="overlay-step-line" id="ol-s3"><span class="ok">✔</span> Калибровка цен Минэнерго 2025</div>
+    <div class="overlay-step-line" id="ol-s4"><span class="ok">✔</span> Запуск AI-движка расчётов</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// PARTICLES
+// ============================================================
+(function(){
+  const container = document.getElementById('particles');
+  const colors = ['rgba(0,212,255,0.4)','rgba(255,215,0,0.3)','rgba(57,255,20,0.3)','rgba(255,107,53,0.25)'];
+  for(let i=0;i<40;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random()*4+2;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${8+Math.random()*14}s;
+      animation-delay:${Math.random()*10}s;
+    `;
+    container.appendChild(p);
+  }
+})();
+
+// ============================================================
+// ANIMATED COUNTERS
+// ============================================================
+function animateCounter(el, target, duration, decimals) {
+  const start = performance.now();
+  function update(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const value = eased * target;
+    el.textContent = decimals ? value.toFixed(decimals) : Math.round(value).toLocaleString('ru');
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+const statsObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting) {
+      statsObserver.disconnect();
+      document.querySelectorAll('.stat-item').forEach(el => el.classList.add('visible'));
+      animateCounter(document.getElementById('count-regions'), 7, 1200);
+      animateCounter(document.getElementById('count-mc'), 1000, 1600);
+      animateCounter(document.getElementById('count-sources'), 6, 1400);
+    }
+  });
+}, { threshold: 0.3 });
+statsObserver.observe(document.getElementById('hero-stats'));
+
+// ============================================================
+// SCROLL REVEAL
+// ============================================================
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting) e.target.classList.add('visible');
+  });
+}, { threshold: 0.15, rootMargin:'0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+// ============================================================
+// LAUNCH TRANSITION
+// ============================================================
+function launchSimulator(e) {
+  e.preventDefault();
+  const target = 'nomadgrid_main.html';
+  const overlay = document.getElementById('launch-overlay');
+  const bar = document.getElementById('ol-bar');
+  const pct = document.getElementById('ol-pct');
+  const status = document.getElementById('ol-status');
+
+  const steps = [
+    { id:'ol-s1', label:'Загрузка данных регионов КР...', delay:0    },
+    { id:'ol-s2', label:'Инициализация NASA GHI модуля', delay:320  },
+    { id:'ol-s3', label:'Калибровка цен Минэнерго 2025', delay:620  },
+    { id:'ol-s4', label:'Запуск AI-движка расчётов',     delay:900  },
+  ];
+  const statuses = [
+    'ИНИЦИАЛИЗАЦИЯ...',
+    'ЗАГРУЗКА ДАННЫХ...',
+    'КАЛИБРОВКА МОДЕЛИ...',
+    'ЗАПУСК...',
+    'ГОТОВО ✔',
+  ];
+
+  // Show overlay
+  overlay.classList.add('active');
+
+  // Spawn burst rings from click origin
+  const rect = (e.currentTarget || e.target).getBoundingClientRect();
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top  + rect.height/2;
+  for(let i=0;i<3;i++){
+    setTimeout(() => {
+      const ring = document.createElement('div');
+      ring.className = 'burst';
+      ring.style.cssText = `left:${cx}px;top:${cy}px;border-color:${['var(--accent)','var(--accent3)','var(--accent2)'][i]};animation-delay:${i*0.12}s`;
+      overlay.appendChild(ring);
+      setTimeout(()=>ring.remove(), 1200);
+    }, i * 80);
+  }
+
+  // Animate progress bar
+  const totalDuration = 1500;
+  const startTime = performance.now();
+  function animBar(now) {
+    const p = Math.min((now - startTime) / totalDuration, 1);
+    const eased = p < 0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+    const pctVal = Math.round(eased * 100);
+    bar.style.width = pctVal + '%';
+    pct.textContent = pctVal + '%';
+    const si = Math.floor(eased * statuses.length);
+    status.textContent = statuses[Math.min(si, statuses.length-1)];
+    if(p < 1) requestAnimationFrame(animBar);
+  }
+  requestAnimationFrame(animBar);
+
+  // Reveal step lines one by one
+  steps.forEach((s, i) => {
+    setTimeout(() => {
+      // Mark previous step as completed
+      if (i > 0) {
+        const prev = document.getElementById(steps[i-1].id);
+        if (prev) {
+          const prevSpan = prev.querySelector('span');
+          if (prevSpan) {
+            prevSpan.className = 'ok';
+            prevSpan.textContent = '✔';
+          }
+        }
+      }
+      const el = document.getElementById(s.id);
+      if (el) el.classList.add('done');
+    }, s.delay);
+  });
+
+  // Mark the last step as completed after the animation finishes
+  setTimeout(() => {
+    const lastStep = document.getElementById(steps[steps.length - 1].id);
+    if (lastStep) {
+      const span = lastStep.querySelector('span');
+      if (span) { span.className = 'ok'; span.textContent = '✔'; }
+    }
+  }, 1300);
+
+  // Navigate after animation
+  setTimeout(() => {
+    overlay.classList.add('flash');
+    setTimeout(() => { window.location.href = target; }, 350);
+  }, 1700);
+}
+
+// Attach to all launch buttons
+document.querySelectorAll('a[href="nomadgrid_main.html"]').forEach(btn => {
+  btn.addEventListener('click', launchSimulator);
+});
+</script>
+</body>
+</html>
