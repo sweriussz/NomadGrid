@@ -84,23 +84,13 @@ The project is deliberately built with **no build step and no backend** — thre
 - [jsPDF](https://github.com/parallax/jsPDF) + [html2canvas](https://github.com/niklasvh/html2canvas) — PDF report generation
 - Google Fonts: Unbounded, Space Mono, IBM Plex Sans
 
-## Running Locally
+## 🌐 Live Demo
 
-No dependencies or installation required:
+The project is live and hosted on GitHub Pages:
 
-```bash
-git clone https://github.com/<your-username>/nomadgrid.git
-cd nomadgrid
-```
+👉 **[Launch Live Demo](https://<sweriussz>.github.io/nomadgrid)**
 
-Just open `index.html` in your browser — or, for convenience, run a local server:
-
-```bash
-python3 -m http.server 8000
-# then open http://localhost:8000
-```
-
-You can also deploy it with **GitHub Pages** (Settings → Pages → Source: main) and the project will be live at a direct link.
+> No installation or local setup required — run it directly in your browser.
 
 ## Repository Structure
 
